@@ -2,7 +2,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 require('../js/hangul.js');
-['vocab', 'read-word', 'read-sentence', 'write-word', 'write-sentence'].forEach((f) => require('../js/content/' + f + '.js'));
+['vocab', 'read-word', 'write-word', 'write-sentence'].forEach((f) => require('../js/content/' + f + '.js'));
 require('../js/engine.js');
 const { hangul: H, engine: E, data: D } = globalThis.SG;
 const { TYPE } = E;
@@ -119,13 +119,9 @@ test('콘텐츠 데이터 무결성', () => {
     assert.ok(t.tiles.cho.includes(d.cho) && t.tiles.jung.includes(d.jung) && t.tiles.jong.includes(d.jong), t.id);
     assert.ok(D.VOCAB[t.contrast], t.contrast);
   });
-  D.STORIES.forEach((s) => s.questions.forEach((q) => {
-    assert.ok(q.choices.some((c) => c[0] === q.answer));
-    assert.ok(s.sentences[q.ref].text.includes(q.answer), q.q);
-  }));
   // 모든 대사 문자열에 평가어 없음
   const fs = require('fs'), path = require('path');
-  const files = ['core.js', 'activities/read-word.js', 'activities/read-sentence.js', 'activities/write-word.js', 'activities/write-sentence.js'];
+  const files = ['core.js', 'activities/read-word.js', '../reading-sentence/app.js', 'activities/write-word.js', 'activities/write-sentence.js'];
   const src = files.map((f) => fs.readFileSync(path.join(__dirname, '../js', f), 'utf8')).join('\n');
   const strings = src.match(/'[^'\n]*[가-힣][^'\n]*'/g) || [];
   strings.forEach((s) => assert.deepEqual(E.findBanned(s), [], s));
