@@ -1,4 +1,4 @@
-/* 데이터 저장부(150): 브라우저 localStorage 에 수행 이력·경험치·정원·보류 목록 저장 */
+/* 데이터 저장부(150): 브라우저 localStorage 에 수행 이력·경험치·피어난 말·보류 목록 저장 */
 (function (root) {
   'use strict';
   var SG = root.SG = root.SG || {};
@@ -8,7 +8,6 @@
     return {
       seedName: '',
       exp: 0,
-      garden: [],        // 목표 도달로 배운 말 [{word, img}]
       bloomed: [],       // 유의미 대체로 피어난 말 [{word, img}]
       confusion: {},     // 목표 자소별 혼동 누적 빈도 {ㅏ: 3}
       confusionPairs: {},// 'ㅏ→ㅓ': 2
@@ -39,7 +38,6 @@
   SG.store = {
     load: load, save: save, reset: reset,
     get: function () { return state || load(); },
-    addGarden: function (word, img) { addUnique(state.garden, { word: word, img: img }); save(); },
     addBloom: function (word, img) { addUnique(state.bloomed, { word: word, img: img }); save(); },
     recordConfusion: function (diffs) {
       diffs.forEach(function (d) {

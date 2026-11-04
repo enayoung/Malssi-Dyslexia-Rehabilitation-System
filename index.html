@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>씨앗의 말 정원</title>
+  <title>말씨 - 씨앗의 말 정원</title>
   <meta name="description" content="언어를 잃은 세상의 아기 씨앗에게 소리와 글을 알려주는 읽기·쓰기 놀이">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,7 +22,6 @@
   </header>
 
   <section class="scene" id="scene">
-    <div class="garden" id="garden" aria-label="씨앗의 정원"></div>
     <div class="seed-wrap">
       <div class="bubble" id="bubble" aria-live="polite"></div>
       <svg id="seed" viewBox="0 0 200 200" aria-hidden="true"></svg>
@@ -34,12 +33,26 @@
 
   <div class="overlay hidden" id="overlay"></div>
 
+  <!-- 공통 엔진 -->
   <script src="js/hangul.js"></script>
-  <script src="js/data.js"></script>
   <script src="js/engine.js"></script>
   <script src="js/speech.js"></script>
   <script src="js/store.js"></script>
   <script src="js/seed.js"></script>
-  <script src="js/app.js"></script>
+
+  <!-- 콘텐츠 (낱말·문장·동화를 고칠 때는 여기 파일만 수정) -->
+  <script src="js/content/vocab.js"></script>
+  <script src="js/content/read-word.js"></script>
+  <script src="js/content/read-sentence.js"></script>
+  <script src="js/content/write-word.js"></script>
+  <script src="js/content/write-sentence.js"></script>
+
+  <!-- 화면 공통 + 활동 (읽기-단어 / 읽기-문장 / 쓰기-단어 / 쓰기-문장) -->
+  <script src="js/core.js"></script>
+  <script src="js/activities/read-word.js"></script>
+  <script src="js/activities/read-sentence.js"></script>
+  <script src="js/activities/write-word.js"></script>
+  <script src="js/activities/write-sentence.js"></script>
+  <script src="js/main.js"></script>
 </body>
 </html>

@@ -1,0 +1,512 @@
+/*
+ * 공통 코어 — 처리 제어부(190)
+ * 화면 도구, 성장, 과제 진행기(TaskRun: 응답 → 분류 → 지원 수준 → 피드백), 이름 짓기, 홈, 세션 종료, 설정.
+ * 각 활동은 js/activities/ 의 파일에서 SG.core 도구를 써서 만들고 SG.registerActivity()로 홈에 등록한다.
+ */
+(function () {
+  'use strict';
+  var H = SG.hangul, D = SG.data, E = SG.engine, S = SG.speech, ST = SG.store, SEED = SG.seed;
+  var T = E.TYPE;
+
+  /* ---------------- 작은 도구들 ---------------- */
+  function $(sel) { return document.querySelector(sel); }
+  function el(tag, props, kids) {
+    var n = document.createElement(tag);
+    props = props || {};
+    Object.keys(props).forEach(function (k) {
+      if (k === 'class') n.className = props[k];
+      else if (k === 'text') n.textContent = props[k];
+      else if (k === 'html') n.innerHTML = props[k];
+      else if (k.slice(0, 2) === 'on') n.addEventListener(k.slice(2), props[k]);
+      else n.setAttribute(k, props[k]);
+    });
+    (kids || []).forEach(function (c) { if (c != null) n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+    return n;
+  }
+  function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function img(word) { return D.VOCAB[word] || '🌱'; }
+  var panel = $('#panel');
+
+  function inputMode() {
+    var m = ST.get().settings.inputMode;
+    if (m === 'auto') return S.recognitionSupported() ? 'voice' : 'tap';
+    return m;
+  }
+
+  /* ---------------- 세션 기록 (과정 메시지용) ---------------- */
+  var session;
+  function newSession() {
+    session = { attempts: 0, retries: 0, completed: 0, held: 0, quitEarly: false, totalReachMs: 0, reachCount: 0, bloomed: 0 };
+  }
+  newSession();
+
+  /* ---------------- 성장 시각화부 ---------------- */
+  var lastStage = -1;
+  function updateGrowth() {
+    var st = ST.get(), stage = E.stageOf(st.exp);
+    $('#seed-name').textContent = st.seedName || '씨앗';
+    $('#stage-name').textContent = E.STAGES[stage];
+    $('#growth-fill').style.width = Math.round(E.stageProgress(st.exp) * 100) + '%';
+    if (stage !== lastStage) { SEED.render(stage); lastStage = stage; }
+  }
+  function addExp(n) {
+    var st = ST.get(), before = E.stageOf(st.exp);
+    st.exp += n; ST.save();
+    updateGrowth();
+    var after = E.stageOf(st.exp);
+    if (after > before) celebrate(after);
+  }
+  function celebrate(stage) {
+    var ov = $('#overlay');
+    ov.innerHTML = '';
+    ov.appendChild(el('div', { class: 'celebrate' }, [
+      el('div', { class: 'big-emoji', text: ['🌰', '🌰', '🌱', '🌿', '🪴', '🌳', '🌸'][stage] }),
+      el('p', { text: '' }),
+      el('p', { class: 'sub', text: '여러 번 들려준 말들이 씨앗을 키웠어요.' }),
+      el('button', { class: 'btn primary', text: '좋아요', onclick: function () { ov.classList.add('hidden'); } })
+    ]));
+    ov.querySelector('p').textContent = H.josa(ST.get().seedName || '씨앗', '이/가') + ' ‘' + E.STAGES[stage] + '’ 모습으로 자랐어요!';
+    ov.classList.remove('hidden');
+    SEED.react('happy');
+  }
+
+
+  /* 유의미 대체 응답의 의미 이미지가 씨앗 주변에 '피어나는' 연출 */
+  function bloomAt(emoji) {
+    var layer = $('#bloom-layer');
+    var b = el('span', { class: 'bloom', text: emoji });
+    layer.appendChild(b);
+    setTimeout(function () { b.remove(); }, 2600);
+  }
+
+  /* ---------------- 목표 표현 표시 (적응형 지원부 160) ---------------- */
+  function TargetDisplay(text, opt) {
+    opt = opt || {};
+    var wrap = el('div', { class: 'target' + (opt.sentence ? ' sentence' : '') });
+    var line = el('div', { class: 'target-line' });
+    var spans = text.split('').map(function (ch) {
+      var s = el('span', { class: ch === ' ' ? 'sp' : 'syl', text: ch === ' ' ? ' ' : ch });
+      line.appendChild(s);
+      return s;
+    });
+    var jamoRow = el('div', { class: 'jamo-row' });
+    wrap.appendChild(line); wrap.appendChild(jamoRow);
+    return {
+      el: wrap, text: text,
+      emphasize: function (info, pointing) {
+        wrap.classList.add('assist');
+        spans.forEach(function (s) { s.classList.remove('emph', 'pointed'); });
+        jamoRow.innerHTML = '';
+        var idx = info.indexes && info.indexes.length ? info.indexes : spans.map(function (_, i) { return i; }).filter(function (i) { return H.isSyllable(text[i]); });
+        idx.forEach(function (i) { if (spans[i]) spans[i].classList.add('emph'); });
+        if (pointing && spans[idx[0]]) spans[idx[0]].classList.add('pointed');
+        // 강조된 음절을 자소로 풀어서 다른 자소 하이라이트
+        var uniq = idx.filter(function (v, k) { return idx.indexOf(v) === k; }).slice(0, 3);
+        uniq.forEach(function (i) {
+          var d = H.decompose(text[i]); if (!d) return;
+          var box = el('span', { class: 'jamo-box' });
+          ['cho', 'jung', 'jong'].forEach(function (pos) {
+            if (!d[pos]) return;
+            var hit = (info.jamo || []).some(function (j) { return j.index === i && j.pos === pos; });
+            box.appendChild(el('span', { class: 'jamo' + (hit ? ' hit' : ''), text: d[pos] }));
+          });
+          jamoRow.appendChild(box);
+        });
+      },
+      clear: function () {
+        wrap.classList.remove('assist'); jamoRow.innerHTML = '';
+        spans.forEach(function (s) { s.classList.remove('emph', 'pointed', 'karaoke'); });
+      },
+      karaoke: function (msPer) {
+        var i = 0, syl = spans.filter(function (s) { return s.className.indexOf('syl') >= 0; });
+        return new Promise(function (resolve) {
+          (function step() {
+            syl.forEach(function (s) { s.classList.remove('karaoke'); });
+            if (i >= syl.length) { resolve(); return; }
+            syl[i].classList.add('karaoke'); i++;
+            setTimeout(step, msPer || 420);
+          })();
+        });
+      }
+    };
+  }
+
+  /** 모델 음성 + 글자 하이라이트 */
+  function modelVoice(text, display) {
+    var p1 = S.speak(text, 'model');
+    var p2 = display ? display.karaoke(Math.max(300, 2600 / Math.max(1, H.normalize(text).length))) : Promise.resolve();
+    return Promise.all([p1, p2]);
+  }
+
+  /* ---------------- 비교 카드 (유의미 대체 응답) ---------------- */
+  function compareCard(targetWord, heardWord, heardImg, diffs) {
+    function side(word, emoji, which) {
+      var w = el('div', { class: 'cmp-word' });
+      word.split('').forEach(function (ch, i) {
+        var d = H.decompose(ch);
+        var hit = diffs.some(function (x) { return x.index === i; });
+        var syl = el('span', { class: 'cmp-syl' + (hit ? ' hit' : '') }, [el('b', { text: ch })]);
+        if (d && hit) {
+          var jr = el('small', { class: 'cmp-jamo' });
+          ['cho', 'jung', 'jong'].forEach(function (pos) {
+            if (!d[pos]) return;
+            var jh = diffs.some(function (x) { return x.index === i && x.pos === pos; });
+            jr.appendChild(el('span', { class: jh ? 'hit' : '', text: d[pos] }));
+          });
+          syl.appendChild(jr);
+        }
+        w.appendChild(syl);
+      });
+      return el('div', { class: 'cmp-side ' + which }, [
+        el('div', { class: 'cmp-img', text: emoji }), w,
+        el('button', { class: 'mini', text: '🔊', 'aria-label': word + ' 듣기', onclick: function () { S.speak(word, 'model'); } })
+      ]);
+    }
+    return el('div', { class: 'compare' }, [
+      side(heardWord, heardImg, 'heard'),
+      el('div', { class: 'cmp-vs', text: '↔' }),
+      side(targetWord, '❔', 'goal')
+    ]);
+  }
+
+  /* ================= 과제 진행기 (S500~S560) ================= */
+  /**
+   * o: {activity, id, target, sentence:bool, display:TargetDisplay|null, fbSlot:Element,
+   *     view:{emphasize(info,pointing), onReached(res), revealTarget()}, noRespMs, word(낱말 과제의 목표 낱말), onDone(outcome)}
+   */
+  function TaskRun(o) {
+    this.o = o;
+    this.attempts = 0; this.retries = 0;
+    this.start = Date.now();
+    this.finished = false; this.busy = false;
+    this.noRespMs = o.noRespMs || (o.sentence ? E.CONFIG.noResponseSentenceMs : E.CONFIG.noResponseMs);
+    this.confused = E.confusedJamoIn(o.target, ST.get().confusion);
+    current = this;
+    if (this.confused.length && o.view && o.view.emphasize) {
+      // 혼동 음소 이력 → 처음부터 제2수준 강조 (도 6, [0047])
+      o.view.emphasize({ indexes: this.confused.map(function (c) { return c.index; }), jamo: this.confused }, false);
+    }
+    this.arm();
+  }
+  var current = null;
+
+  TaskRun.prototype.arm = function () {
+    var self = this;
+    clearTimeout(this.timer);
+    if (this.finished) return;
+    this.timer = setTimeout(function () {
+      if (!self.busy && !self.finished && current === self) self.respond({ type: T.NO_RESPONSE });
+    }, this.noRespMs);
+  };
+  TaskRun.prototype.poke = function () { this.arm(); };
+  TaskRun.prototype.stop = function () { this.finished = true; clearTimeout(this.timer); if (current === this) current = null; };
+
+  /** 사용자 이탈: 과제를 보류 목록에 저장 */
+  TaskRun.prototype.abandon = function () {
+    if (this.finished) return;
+    ST.addHold(this.o.activity, this.o.id);
+    session.quitEarly = true;
+    this.record(false, true);
+    this.stop();
+  };
+
+  TaskRun.prototype.record = function (reached, held) {
+    ST.addHistory({ activity: this.o.activity, id: this.o.id, attempts: this.attempts, retries: this.retries,
+      reached: reached, held: held, ms: Date.now() - this.start, at: new Date().toISOString() });
+  };
+
+  TaskRun.prototype.respond = function (res) {
+    if (this.finished || this.busy) return Promise.resolve();
+    clearTimeout(this.timer);
+    var self = this, o = this.o;
+    var isD = res.type === T.NO_RESPONSE;
+    if (!isD) {
+      this.attempts++; session.attempts++;
+      if (this.attempts === 1) addExp(E.CONFIG.exp.firstTry);
+      else { addExp(E.CONFIG.exp.retry); session.retries++; }
+    }
+    if (res.type !== T.REACHED && res.diffs && res.diffs.length) ST.recordConfusion(res.diffs);
+    if (o.fbSlot) o.fbSlot.innerHTML = '';
+
+    /* ----- 목표 도달 (A) ----- */
+    if (res.type === T.REACHED) {
+      this.busy = true;
+      var ms = Date.now() - this.start;
+      session.completed++; session.reachCount++; session.totalReachMs += ms;
+      addExp(E.CONFIG.exp.complete);
+      ST.removeHold(o.activity, o.id);
+      this.record(true, false);
+      var fb = E.buildFeedback({ type: T.REACHED, target: o.word || o.target, attempt: o.sentence ? 0 : this.attempts });
+      SEED.react(fb.anim);
+      if (o.view && o.view.onReached) o.view.onReached(res);
+      if (o.display) o.display.clear();
+      return SEED.say(fb.text, { intent: fb.intent }).then(function () { return wait(500); }).then(function () {
+        self.stop(); o.onDone('reached');
+      });
+    }
+
+    /* ----- 목표 미도달 (B/C/D): 지원 수준 결정 후 간접 피드백 ----- */
+    this.retries++;
+    var level = E.decideLevel({ type: res.type, retries: this.retries, elapsedMs: Date.now() - this.start, confusedHit: this.confused.length > 0 });
+    var fb2 = E.buildFeedback({ type: res.type, level: level, target: o.sayTarget || o.target, heard: res.heard, word: res.word,
+      targetWord: res.targetWord, attempt: this.retries });
+    this.busy = true;
+    var acts = fb2.actions;
+    var chain = Promise.resolve();
+
+    if (acts.indexOf('hold') >= 0) {
+      ST.addHold(o.activity, o.id); session.held++;
+      this.record(false, true);
+      SEED.react('hug');
+      return SEED.say(fb2.text, { intent: 'hold' }).then(function () { return wait(400); }).then(function () {
+        self.stop(); o.onDone('held');
+      });
+    }
+
+    SEED.react(fb2.anim);
+    if (acts.indexOf('bloom') >= 0 && res.image) {
+      bloomAt(res.image);
+      ST.addBloom(res.word || res.heard, res.image); session.bloomed++;
+    }
+    if (acts.indexOf('compare') >= 0 && o.fbSlot) {
+      var tw = res.targetWord || (o.sentence ? null : o.target);
+      var hw = res.word || res.heard;
+      if (tw && H.normalize(hw).length === H.normalize(tw).length) {
+        o.fbSlot.appendChild(compareCard(tw, H.normalize(hw), res.image || img(hw), res.diffs || []));
+      } else if (res.image) {
+        o.fbSlot.appendChild(el('div', { class: 'scene-card' }, [el('div', { class: 'cmp-img', text: res.image }), el('p', { text: res.heard })]));
+      }
+    }
+    if (acts.indexOf('emphasize') >= 0 && o.view && o.view.emphasize) {
+      var info = emphasisInfo(o, res, this.confused);
+      o.view.emphasize(info, acts.indexOf('point') >= 0);
+      if (acts.indexOf('point') >= 0) SEED.react('point');
+    }
+    if (acts.indexOf('modelVoice') >= 0) {
+      chain = chain.then(function () { return SEED.say('내가 먼저 들려줄게.', { intent: 'model' }); })
+        .then(function () { if (o.view && o.view.revealTarget) o.view.revealTarget(); return modelVoice(o.target, o.display); })
+        .then(function () { return SEED.say(fb2.text, { intent: fb2.intent }); });
+    } else {
+      chain = chain.then(function () { return SEED.say(fb2.text, { intent: fb2.intent }); });
+    }
+    return chain.then(function () {
+      self.busy = false;
+      if (isD) self.noRespMs = Math.min(self.noRespMs * 2, 30000); // 생각할 시간을 넉넉히
+      self.arm();
+    });
+  };
+
+  function emphasisInfo(o, res, confused) {
+    var diffs = res.diffs || [];
+    if (diffs.length) {
+      var off = 0;
+      if (o.sentence && res.targetWord) off = Math.max(0, o.target.indexOf(res.targetWord));
+      else if (o.sentence) off = -1;
+      if (off >= 0) return { indexes: diffs.map(function (d) { return d.index + off; }), jamo: diffs.map(function (d) { return { index: d.index + off, pos: d.pos }; }), word: res.targetWord };
+    }
+    if (confused.length) return { indexes: confused.map(function (c) { return c.index; }), jamo: confused };
+    return { indexes: [], jamo: [] };
+  }
+
+  /* ---------------- 공통 화면 조각 ---------------- */
+  function activityHeader(title, onExit) {
+    return el('div', { class: 'act-head' }, [
+      el('h2', { text: title }),
+      el('button', { class: 'btn ghost small', text: '정원으로 🏡', onclick: function () { if (onExit) onExit(); goHome(); } })
+    ]);
+  }
+  function exitCurrent() { if (current) current.abandon(); S.stopSpeaking(); S.stopListening(); }
+
+  /** 음성 입력 버튼. onHeard(alternatives, error) */
+  function micButton(label, onHeard, run) {
+    var b = el('button', { class: 'btn mic', 'aria-label': label }, [el('span', { class: 'mic-ic', text: '🎤' }), el('span', { text: label })]);
+    b.addEventListener('click', function () {
+      if (b.disabled || (run && run.busy)) return;
+      if (run) run.poke();
+      b.disabled = true; b.classList.add('listening');
+      SEED.react('listen');
+      S.listen({ maxMs: 7000 }).then(function (r) {
+        b.disabled = false; b.classList.remove('listening');
+        SEED.react(null);
+        if (r.error === 'not-allowed' || r.error === 'service-not-allowed' || r.error === 'network' || r.error === 'unsupported' || r.error === 'start-failed') {
+          SEED.say('마이크 소리가 들리지 않아. 누르기 방법으로 알려줄래?', { intent: 'generic' });
+          ST.get().settings.inputMode = 'tap'; ST.save(); updateModeBtn();
+          if (onHeard.fallback) onHeard.fallback();
+          return;
+        }
+        onHeard(r.alternatives || [], r.error);
+      });
+    });
+    return b;
+  }
+
+  function runQueue(list, runOne, onFinish) {
+    var i = 0;
+    (function next() {
+      if (i >= list.length) { onFinish(); return; }
+      var item = list[i++];
+      runOne(item, next);
+    })();
+  }
+
+  function heldFirst(activity, all, n) {
+    var held = ST.heldIds(activity);
+    var heldTasks = all.filter(function (t) { return held.indexOf(t.id) >= 0; });
+    var rest = shuffle(all.filter(function (t) { return held.indexOf(t.id) < 0; }));
+    return heldTasks.concat(rest).slice(0, Math.max(n, heldTasks.length));
+  }
+  function isHeld(activity, id) { return ST.heldIds(activity).indexOf(id) >= 0; }
+
+  function roundDone(title, again) {
+    panel.innerHTML = '';
+    panel.appendChild(el('div', { class: 'card center' }, [
+      el('div', { class: 'big-emoji', text: '🌼' }),
+      el('h2', { text: title }),
+      el('div', { class: 'row' }, [
+        el('button', { class: 'btn primary', text: '한 번 더 할래요', onclick: again }),
+        el('button', { class: 'btn', text: '정원으로 🏡', onclick: goHome })
+      ])
+    ]));
+    SEED.react('happy');
+    SEED.say('오늘 알려준 말, 잘 기억해 둘게!', { intent: 'generic' });
+  }
+
+  /* ================= 이름 짓기 (도입 활동) ================= */
+  function showNaming() {
+    panel.innerHTML = '';
+    var input = el('input', { class: 'name-input', type: 'text', maxlength: '12', placeholder: '이름을 써 주세요', 'aria-label': '씨앗 이름' });
+    function accept(name) {
+      name = (name || '').trim() || '새싹이';
+      ST.get().seedName = name; ST.save(); updateGrowth();
+      SEED.react('happy');
+      addExp(E.CONFIG.exp.firstTry);
+      SEED.say('와, 내 이름은 ' + name + '! 정말 마음에 들어. 고마워!', { intent: 'reached' }).then(goHome);
+    }
+    var kids = [
+      el('h2', { text: '씨앗에게 이름을 지어 주세요' }),
+      el('p', { class: 'muted', text: '어떤 이름이든 좋아요.' })
+    ];
+    if (inputMode() === 'voice') {
+      kids.push(micButton('이름 말해 주기', function (alts) { if (alts.length) accept(alts[0].replace(/[.?!]/g, '')); else SEED.say('조금 더 크게 들려줄래? 써 줘도 좋아!', { intent: 'retry' }); }));
+    }
+    kids.push(el('div', { class: 'row' }, [input, el('button', { class: 'btn primary', text: '이 이름으로 할래요', onclick: function () { accept(input.value); } })]));
+    panel.appendChild(el('div', { class: 'card center' }, kids));
+    SEED.react('sing');
+    SEED.say('안녕! 나는 말을 잃은 세상에 남은 아기 씨앗이야. 내 이름을 지어 줄래?', { intent: 'generic' });
+  }
+
+  /* ================= 정원 (홈) ================= */
+  function goHome() {
+    exitCurrent();
+    panel.innerHTML = '';
+    var st = ST.get();
+    var grid = el('div', { class: 'act-grid' }, activities.map(function (a) {
+      return el('button', { class: 'act-tile', onclick: function () { exitCurrent(); a.start(); } },
+        [el('span', { class: 'act-ic', text: a.icon }), el('b', { text: a.title }), el('small', { text: a.desc })]);
+    }));
+    var bloomed = st.bloomed.map(function (x) { return x.img + ' ' + x.word; });
+    panel.appendChild(el('div', { class: 'home' }, [
+      grid,
+      el('details', { class: 'card words' }, [
+        el('summary', { text: '함께 피어난 말 보기' }),
+        el('div', { class: 'chips' }, bloomed.length ? bloomed.map(function (t) { return el('span', { class: 'chip bloom-chip', text: t }); }) : [el('span', { class: 'muted', text: '아직 비어 있어요' })]),
+        st.hold.length ? el('p', { class: 'muted', text: '씨앗이 기억해 둔 말이 있어요. 다음에 먼저 다시 만나요.' }) : null
+      ]),
+      el('div', { class: 'row' }, [
+        el('button', { class: 'btn', text: '오늘은 여기까지 🌙', onclick: endSession }),
+        el('button', { class: 'btn ghost small', text: '설정 ⚙️', onclick: showSettings })
+      ])
+    ]));
+    SEED.react(null);
+    SEED.say(pickHello(), { intent: 'generic', voice: false });
+  }
+  function pickHello() {
+    var n = ST.get().seedName || '씨앗';
+    return ['오늘은 어떤 말을 알려줄래?', '나 ' + n + '! 새로운 소리가 궁금해.', '같이 놀자! 무엇부터 할까?'][Math.floor(Math.random() * 3)];
+  }
+
+  /* ================= 세션 종료: 과정 메시지 ================= */
+  function endSession() {
+    exitCurrent();
+    var msgs = E.processMessages(session);
+    panel.innerHTML = '';
+    panel.appendChild(el('div', { class: 'card center' }, [
+      el('div', { class: 'big-emoji', text: '🌙' }),
+      el('h2', { text: '오늘의 정원 이야기' }),
+      el('ul', { class: 'process' }, msgs.map(function (m) { return el('li', { text: m }); })),
+      el('button', { class: 'btn primary', text: '정원으로 🏡', onclick: function () { newSession(); goHome(); } })
+    ]));
+    SEED.react('sing');
+    SEED.say(msgs[0], { intent: 'session' });
+  }
+
+  function showSettings() {
+    var st = ST.get();
+    panel.innerHTML = '';
+    function toggle(label, key) {
+      var cb = el('input', { type: 'checkbox' });
+      cb.checked = !!st.settings[key];
+      cb.addEventListener('change', function () { st.settings[key] = cb.checked; ST.save(); applyText(); });
+      return el('label', { class: 'toggle' }, [cb, el('span', { text: label })]);
+    }
+    panel.appendChild(el('div', { class: 'card' }, [
+      el('h2', { text: '설정' }),
+      toggle('씨앗 목소리로 말하기', 'seedVoice'),
+      toggle('글자 크게 보기', 'bigText'),
+      el('p', { class: 'muted', text: '음성 인식: ' + (S.recognitionSupported() ? '이 브라우저에서 사용할 수 있어요 (크롬·엣지 권장)' : '이 브라우저에서는 쓸 수 없어 누르기 방법으로 진행해요') }),
+      el('div', { class: 'row' }, [
+        el('button', { class: 'btn', text: '돌아가기', onclick: goHome }),
+        el('button', { class: 'btn ghost small', text: '처음부터 새로 시작', onclick: function () {
+          if (confirm('씨앗과 정원을 모두 새로 시작할까요?')) { ST.reset(); newSession(); lastStage = -1; updateGrowth(); applyText(); updateModeBtn(); showNaming(); }
+        } })
+      ])
+    ]));
+  }
+
+  /* ================= 활동 등록 ================= */
+  var activities = [];
+  /** a: {key, order, icon, title, desc, start()} */
+  SG.registerActivity = function (a) {
+    activities.push(a);
+    activities.sort(function (x, y) { return x.order - y.order; });
+  };
+
+  /* ================= 상단 버튼 ================= */
+  function updateModeBtn() {
+    var b = $('#btn-mode');
+    var m = inputMode();
+    b.textContent = m === 'voice' ? '🎤' : '👆';
+    b.setAttribute('aria-label', m === 'voice' ? '지금은 말하기 방법 (누르기로 바꾸기)' : '지금은 누르기 방법 (말하기로 바꾸기)');
+  }
+  $('#btn-mode').addEventListener('click', function () {
+    var st = ST.get();
+    var m = inputMode();
+    if (m === 'tap' && !S.recognitionSupported()) { SEED.say('이 브라우저에서는 말하기를 쓸 수 없어. 크롬에서 열어 줄래?', { intent: 'generic' }); return; }
+    st.settings.inputMode = m === 'voice' ? 'tap' : 'voice'; ST.save(); updateModeBtn();
+    SEED.say(st.settings.inputMode === 'voice' ? '이제 말로 들려줘!' : '이제 눌러서 알려줘!', { intent: 'generic', voice: false });
+  });
+  function applyText() { document.body.classList.toggle('big-text', !!ST.get().settings.bigText); }
+  $('#btn-text').addEventListener('click', function () { var st = ST.get(); st.settings.bigText = !st.settings.bigText; ST.save(); applyText(); });
+  $('#btn-home').addEventListener('click', function () { if (ST.get().seedName) goHome(); });
+  $('#seed').addEventListener('click', function () { SEED.react('happy'); });
+
+  /* 활동 이탈(탭 닫기)도 보류로 기록 */
+  window.addEventListener('pagehide', function () { if (current) current.abandon(); });
+
+  /* 활동 파일에서 쓰는 공통 도구 */
+  SG.core = {
+    el: el, shuffle: shuffle, wait: wait, img: img, panel: panel, inputMode: inputMode,
+    session: function () { return session; }, addExp: addExp,
+    TargetDisplay: TargetDisplay, modelVoice: modelVoice, TaskRun: TaskRun,
+    isCurrent: function (run) { return current === run; },
+    activityHeader: activityHeader, exitCurrent: exitCurrent, micButton: micButton,
+    runQueue: runQueue, heldFirst: heldFirst, isHeld: isHeld, roundDone: roundDone,
+    goHome: goHome, endSession: endSession, showNaming: showNaming,
+    start: function () {
+      ST.load();
+      updateGrowth(); applyText(); updateModeBtn();
+      if (!ST.get().seedName) showNaming(); else goHome();
+    }
+  };
+})();

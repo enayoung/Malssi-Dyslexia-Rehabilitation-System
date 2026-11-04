@@ -203,12 +203,12 @@
   /**
    * @param {object} p {type, level, target, heard, name, attempt}
    * @returns {{intent, text, anim, actions:string[]}}
-   *  actions: 'garden' 'bloom' 'compare' 'emphasize' 'point' 'modelVoice' 'readTogether' 'hold' 'next' 'highlight'
+   *  actions: 'bloom' 'compare' 'emphasize' 'point' 'modelVoice' 'readTogether' 'hold' 'next' 'highlight'
    */
   function buildFeedback(p) {
     var t = p.target, h = p.heard, n = p.attempt || 0, fb;
     if (p.type === TYPE.REACHED) {
-      fb = { intent: 'reached', anim: 'nod', actions: ['garden', 'next'],
+      fb = { intent: 'reached', anim: 'nod', actions: ['next'],
              text: pick(['이제 알겠어. 고마워!', '‘' + t + '’! 나도 이제 말할 수 있어. 고마워!', '아하, ‘' + t + '’구나! 알려줘서 고마워!'], n) };
     } else if (p.level === LEVEL.L4) {
       fb = { intent: 'hold', anim: 'hug', actions: ['hold', 'next'], text: SAFE.hold };
