@@ -71,13 +71,15 @@ node --test tests/*.test.js
 
 ```
 index.html
-css/style.css
+css/common.css         두 페이지 공통: 색·글꼴·상단 바·씨앗 애니메이션·버튼·축하 창
+css/style.css          처음 화면 전용
 js/
   hangul.js            자소 분해·비교 (수행 기록·분석부 140)
   engine.js            간접 피드백부 170: 분류·지원 수준·대사·평가어 검증·과정 메시지, 성장 정책 180
   speech.js            음성 인식·모델 음성 (사용자 입력 수신부 130)
   store.js             저장: 이력·혼동 자소·보류 목록·경험치 (데이터 저장부 150)
-  seed.js              씨앗 캐릭터·반응 애니메이션·말풍선
+  seed.js              씨앗 캐릭터·반응 애니메이션·말풍선 (동화 읽기 페이지도 같은 씨앗 사용)
+  growth.js            경험치·성장 단계·자랄 때 축하 (두 페이지 공통)
   core.js              화면 공통 + 과제 진행기 TaskRun(S500~S560) + 홈·이름 짓기·설정
   main.js              시작
 
@@ -103,6 +105,7 @@ reading-sentence/      ← 읽기-문장(동화)은 독립 페이지
 tests/engine.test.js, tests/reading-sentence.test.js
 ```
 
+동화 읽기 페이지도 처음 화면과 같은 씨앗·경험치를 씁니다. 문장을 읽거나 질문에 답하면 같은 씨앗이 자라고, 상단 🏡 또는 ‘정원으로 🏡’로 돌아갑니다.
 읽기-문장 페이지는 `reading-sentence/?dev` 로 열면 음성 대신 글자를 입력해 흐름을 확인할 수 있습니다.
 
 ### 콘텐츠 고치는 법

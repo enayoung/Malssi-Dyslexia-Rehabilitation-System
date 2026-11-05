@@ -1,32 +1,5 @@
-/* 씨앗의 말 정원 — 읽기 편한 글꼴, 넉넉한 자간, 부정적 색(빨강) 사용 안 함 */
-:root {
-  --bg: #fbf6ea;
-  --bg-2: #f2ead4;
-  --card: #fffdf6;
-  --ink: #3d3527;
-  --muted: #7a6f5a;
-  --line: #e4d9bd;
-  --accent: #5b9a5f;
-  --accent-ink: #ffffff;
-  --accent-soft: #e3f0dc;
-  --emph: #2f6fb3;
-  --emph-soft: #dbe9f8;
-  --sun: #f5c64b;
-  --sky: #d9eef3;
-  --soil: #b9905f;
-  --seed: #c98d52;
-  --cheek: #f3a68c;
-  --leaf: #7cc36d;
-  --leaf-dark: #4f9a54;
-  --trunk: #8c6239;
-  --flower: #f7b7d2;
-  --fruit: #f19a3e;
-  --radius: 18px;
-  --font: 'Gowun Dodum', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
-  --font-title: 'Jua', 'Gowun Dodum', sans-serif;
-  --fs: 18px;
-  --target-fs: 64px;
-}
+/* 처음 화면(단어 읽기·쓰기, 문장 쓰기) 전용 스타일. 공통 부분은 common.css */
+body { display: flex; flex-direction: column; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #1f2420; --bg-2: #262d27; --card: #2b322c; --ink: #f1ecdf; --muted: #b8b09c; --line: #3d463e;
@@ -40,41 +13,8 @@
   --sky: #23343a; --soil: #6e5537;
 }
 
-* { box-sizing: border-box; }
-html, body { margin: 0; }
-body {
-  background: var(--bg);
-  color: var(--ink);
-  font-family: var(--font);
-  font-size: var(--fs);
-  line-height: 1.6;
-  letter-spacing: 0.02em;
-  min-height: 100vh;
-  display: flex; flex-direction: column;
-}
-body.big-text { --fs: 21px; --target-fs: 84px; }
-button { font-family: inherit; font-size: inherit; color: inherit; cursor: pointer; }
-button:disabled { opacity: .45; cursor: default; }
-:focus-visible { outline: 3px solid var(--emph); outline-offset: 2px; }
-h2, h3 { font-family: var(--font-title); font-weight: 400; margin: .2em 0 .4em; }
 .muted { color: var(--muted); font-size: .9em; }
-.hidden { display: none !important; }
 
-/* ---------- 상단 ---------- */
-.topbar {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 16px; background: var(--card); border-bottom: 1px solid var(--line);
-  position: sticky; top: 0; z-index: 5;
-}
-.icon-btn {
-  width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line);
-  background: var(--bg); font-size: 20px; flex: none; white-space: nowrap; padding: 0;
-}
-#btn-text { font-size: 15px; font-weight: 700; }
-.growth { flex: 1; min-width: 0; }
-.growth-label { font-family: var(--font-title); font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.growth-bar { height: 10px; background: var(--bg-2); border-radius: 99px; overflow: hidden; }
-#growth-fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--leaf), var(--leaf-dark)); border-radius: 99px; transition: width .8s ease; }
 
 /* ---------- 정원 장면 ---------- */
 .scene {
@@ -103,26 +43,6 @@ h2, h3 { font-family: var(--font-title); font-weight: 400; margin: .2em 0 .4em; 
   animation: bloom 2.6s ease forwards;
 }
 
-/* 씨앗 반응 애니메이션 */
-#seed.nod { animation: nod .7s ease 2; }
-#seed.tilt { animation: tilt 1.6s ease; }
-#seed.surprise { animation: surprise .8s ease; }
-#seed.sing { animation: sing 1.2s ease 2; }
-#seed.hug { animation: hug 1s ease 2; }
-#seed.happy { animation: surprise .6s ease 2; }
-#seed.point { animation: point .8s ease 2; }
-#seed.listen .seed-body { animation: listen 1s ease infinite; }
-#seed .glow { animation: glow 2s ease-in-out infinite; }
-
-@keyframes nod { 50% { transform: rotate(0) translateY(6px) scaleY(.95); } }
-@keyframes tilt { 20%, 80% { transform: rotate(-12deg); } }
-@keyframes surprise { 40% { transform: translateY(-16px) scale(1.05); } }
-@keyframes sing { 25% { transform: rotate(-5deg); } 75% { transform: rotate(5deg); } }
-@keyframes hug { 50% { transform: scale(1.06, .94); } }
-@keyframes point { 50% { transform: rotate(8deg) translateX(6px); } }
-@keyframes listen { 50% { transform: scale(1.04); } }
-@keyframes glow { 50% { opacity: .5; } }
-@keyframes pop { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 @keyframes bubble { from { transform: translate(-50%, 8px); opacity: 0; } }
 @keyframes bloom {
   0% { transform: translate(-50%, 0) scale(0) rotate(-20deg); opacity: 0; }
@@ -139,13 +59,6 @@ h2, h3 { font-family: var(--font-title); font-weight: 400; margin: .2em 0 .4em; 
 }
 .center { text-align: center; }
 .row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; margin-top: 10px; }
-.btn {
-  border: 1px solid var(--line); background: var(--card); border-radius: 14px;
-  padding: 12px 20px; min-height: 48px; font-weight: 700;
-}
-.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
-.btn.ghost { background: transparent; }
-.btn.small { padding: 8px 14px; min-height: 40px; font-size: .9em; }
 .btn.mic {
   display: inline-flex; align-items: center; gap: 10px; background: var(--accent); color: var(--accent-ink);
   border-color: transparent; font-size: 1.1em; padding: 14px 24px; border-radius: 99px;
@@ -154,8 +67,6 @@ h2, h3 { font-family: var(--font-title); font-weight: 400; margin: .2em 0 .4em; 
 .btn.mic.listening { animation: listen 1s ease infinite; box-shadow: 0 0 0 8px var(--accent-soft); }
 .mini { border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 4px 10px; min-height: 36px; }
 
-.act-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
-.act-head h2 { margin: 0; font-size: 1.25em; }
 
 .act-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 14px; }
 .act-tile {
@@ -265,11 +176,6 @@ h2, h3 { font-family: var(--font-title); font-weight: 400; margin: .2em 0 .4em; 
 .toggle { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
 .toggle input { width: 22px; height: 22px; }
 
-.overlay { position: fixed; inset: 0; background: rgba(40, 35, 25, .45); display: flex; align-items: center; justify-content: center; z-index: 20; padding: 16px; }
-.celebrate { background: var(--card); border-radius: 24px; padding: 28px; text-align: center; max-width: 380px; animation: pop .5s ease; }
-.celebrate p { font-size: 1.15em; margin: .4em 0; }
-.celebrate .sub { color: var(--muted); font-size: .95em; }
-.big-emoji { font-size: 72px; line-height: 1.1; }
 
 @media (max-width: 480px) {
   :root { --fs: 17px; --target-fs: 56px; }

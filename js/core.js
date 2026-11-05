@@ -42,35 +42,9 @@
   newSession();
 
   /* ---------------- 성장 시각화부 ---------------- */
-  var lastStage = -1;
-  function updateGrowth() {
-    var st = ST.get(), stage = E.stageOf(st.exp);
-    $('#seed-name').textContent = st.seedName || '씨앗';
-    $('#stage-name').textContent = E.STAGES[stage];
-    $('#growth-fill').style.width = Math.round(E.stageProgress(st.exp) * 100) + '%';
-    if (stage !== lastStage) { SEED.render(stage); lastStage = stage; }
-  }
-  function addExp(n) {
-    var st = ST.get(), before = E.stageOf(st.exp);
-    st.exp += n; ST.save();
-    updateGrowth();
-    var after = E.stageOf(st.exp);
-    if (after > before) celebrate(after);
-  }
-  function celebrate(stage) {
-    var ov = $('#overlay');
-    ov.innerHTML = '';
-    ov.appendChild(el('div', { class: 'celebrate' }, [
-      el('div', { class: 'big-emoji', text: ['🌰', '🌰', '🌱', '🌿', '🪴', '🌳', '🌸'][stage] }),
-      el('p', { text: '' }),
-      el('p', { class: 'sub', text: '여러 번 들려준 말들이 씨앗을 키웠어요.' }),
-      el('button', { class: 'btn primary', text: '좋아요', onclick: function () { ov.classList.add('hidden'); } })
-    ]));
-    ov.querySelector('p').textContent = H.josa(ST.get().seedName || '씨앗', '이/가') + ' ‘' + E.STAGES[stage] + '’ 모습으로 자랐어요!';
-    ov.classList.remove('hidden');
-    SEED.react('happy');
-  }
-
+  /* 성장: js/growth.js (동화 읽기 페이지와 함께 씀) */
+  function updateGrowth(force) { return SG.growth.update(force); }
+  function addExp(n) { SG.growth.addExp(n); }
 
   /* 유의미 대체 응답의 의미 이미지가 씨앗 주변에 '피어나는' 연출 */
   function bloomAt(emoji) {
@@ -458,7 +432,7 @@
       el('div', { class: 'row' }, [
         el('button', { class: 'btn', text: '돌아가기', onclick: goHome }),
         el('button', { class: 'btn ghost small', text: '처음부터 새로 시작', onclick: function () {
-          if (confirm('씨앗과 정원을 모두 새로 시작할까요?')) { ST.reset(); newSession(); lastStage = -1; updateGrowth(); applyText(); updateModeBtn(); showNaming(); }
+          if (confirm('씨앗과 정원을 모두 새로 시작할까요?')) { ST.reset(); newSession(); updateGrowth(true); applyText(); updateModeBtn(); showNaming(); }
         } })
       ])
     ]));

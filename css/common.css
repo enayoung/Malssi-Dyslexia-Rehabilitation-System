@@ -1,0 +1,111 @@
+/*
+ * 말씨 공통 스타일 — 처음 화면과 동화 읽기 페이지가 함께 씀
+ * 색 · 글꼴 · 상단 바(🏡 / 씨앗 이름 · 단계 / 성장 막대) · 씨앗 반응 애니메이션 · 버튼 · '정원으로' 머리줄 · 자랄 때 축하 창
+ * 읽기 편한 글꼴, 넉넉한 자간, 부정적 색(빨강) 사용 안 함
+ */
+:root {
+  --bg: #fbf6ea;
+  --bg-2: #f2ead4;
+  --card: #fffdf6;
+  --ink: #3d3527;
+  --muted: #7a6f5a;
+  --line: #e4d9bd;
+  --accent: #5b9a5f;
+  --accent-ink: #ffffff;
+  --accent-soft: #e3f0dc;
+  --emph: #2f6fb3;
+  --emph-soft: #dbe9f8;
+  --sun: #f5c64b;
+  --sky: #d9eef3;
+  --soil: #b9905f;
+  --seed: #c98d52;
+  --cheek: #f3a68c;
+  --leaf: #7cc36d;
+  --leaf-dark: #4f9a54;
+  --trunk: #8c6239;
+  --flower: #f7b7d2;
+  --fruit: #f19a3e;
+  --radius: 18px;
+  --font: 'Gowun Dodum', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --font-title: 'Jua', 'Gowun Dodum', sans-serif;
+  --fs: 18px;
+  --target-fs: 64px;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--fs);
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+  min-height: 100vh;
+}
+body.big-text { --fs: 21px; --target-fs: 84px; }
+button { font-family: inherit; font-size: inherit; color: inherit; cursor: pointer; }
+button:disabled { opacity: .45; cursor: default; }
+:focus-visible { outline: 3px solid var(--emph); outline-offset: 2px; }
+h2, h3 { font-family: var(--font-title); font-weight: 400; margin: .2em 0 .4em; }
+.hidden { display: none !important; }
+
+/* ---------- 상단 ---------- */
+.topbar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px; background: var(--card); border-bottom: 1px solid var(--line);
+  position: sticky; top: 0; z-index: 5;
+}
+.icon-btn {
+  width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line);
+  background: var(--bg); font-size: 20px; flex: none; white-space: nowrap; padding: 0;
+}
+#btn-text { font-size: 15px; font-weight: 700; }
+a.icon-btn { display: inline-grid; place-items: center; text-decoration: none; color: inherit; }
+.growth { flex: 1; min-width: 0; }
+.growth-label { font-family: var(--font-title); font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.growth-bar { height: 10px; background: var(--bg-2); border-radius: 99px; overflow: hidden; }
+#growth-fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--leaf), var(--leaf-dark)); border-radius: 99px; transition: width .8s ease; }
+
+/* 씨앗 (js/seed.js 가 그림) 반응 애니메이션 */
+#seed { display: block; transform-origin: 50% 90%; cursor: pointer; }
+#seed.nod { animation: nod .7s ease 2; }
+#seed.tilt { animation: tilt 1.6s ease; }
+#seed.surprise { animation: surprise .8s ease; }
+#seed.sing { animation: sing 1.2s ease 2; }
+#seed.hug { animation: hug 1s ease 2; }
+#seed.happy { animation: surprise .6s ease 2; }
+#seed.point { animation: point .8s ease 2; }
+#seed.listen .seed-body { animation: listen 1s ease infinite; }
+#seed .glow { animation: glow 2s ease-in-out infinite; }
+
+@keyframes nod { 50% { transform: rotate(0) translateY(6px) scaleY(.95); } }
+@keyframes tilt { 20%, 80% { transform: rotate(-12deg); } }
+@keyframes surprise { 40% { transform: translateY(-16px) scale(1.05); } }
+@keyframes sing { 25% { transform: rotate(-5deg); } 75% { transform: rotate(5deg); } }
+@keyframes hug { 50% { transform: scale(1.06, .94); } }
+@keyframes point { 50% { transform: rotate(8deg) translateX(6px); } }
+@keyframes listen { 50% { transform: scale(1.04); } }
+@keyframes glow { 50% { opacity: .5; } }
+@keyframes pop { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* 버튼 */
+.btn {
+  border: 1px solid var(--line); background: var(--card); border-radius: 14px;
+  padding: 12px 20px; min-height: 48px; font-weight: 700;
+}
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.btn.ghost { background: transparent; }
+.btn.small { padding: 8px 14px; min-height: 40px; font-size: .9em; }
+
+/* 활동 머리줄: 제목 + 정원으로 🏡 */
+.act-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.act-head h2 { margin: 0; font-size: 1.25em; }
+a.btn { display: inline-flex; align-items: center; color: inherit; text-decoration: none; }
+
+/* 씨앗이 자랄 때 축하 창 */
+.overlay { position: fixed; inset: 0; background: rgba(40, 35, 25, .45); display: flex; align-items: center; justify-content: center; z-index: 20; padding: 16px; }
+.celebrate { background: var(--card); border-radius: 24px; padding: 28px; text-align: center; max-width: 380px; animation: pop .5s ease; }
+.celebrate p { font-size: 1.15em; margin: .4em 0; }
+.celebrate .sub { color: var(--muted); font-size: .95em; }
+.big-emoji { font-size: 72px; line-height: 1.1; }

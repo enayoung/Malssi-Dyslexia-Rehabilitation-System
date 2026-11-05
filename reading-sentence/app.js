@@ -14,6 +14,10 @@
  *   L4 잠시 보류        : "씨앗이 꼭 기억해 둘게" → 진행 상황 저장 후 쉬기(다음에 강조된 상태로 이어서)
  *   무응답              : 씨앗이 먼저 시범을 들려준 뒤 참여를 요청
  *   ※ "정답/오답/틀렸어/실패/점수" 같은 평가 표현, 붉은색·경고음은 쓰지 않습니다.
+ *
+ * 처음 화면과 연결
+ *   씨앗 그림·반응은 ../js/seed.js, 경험치·성장 단계는 ../js/growth.js 를 함께 씀.
+ *   읽기 시도 +1, 다시 시도 +1, 문장 도달 +2, 질문 응답 +1, 질문 도달 +2 → 같은 씨앗이 자란다.
  */
 (function () {
   'use strict';
@@ -84,55 +88,19 @@
   const later = (fn, ms) => { const t = setTimeout(fn, ms); timers.push(t); return t; };
   function clearTimers() { timers.forEach(clearTimeout); timers = []; }
 
-  function stageFor(clearedCount) {
-    if (clearedCount <= 0) return 0; // 씨앗
-    if (clearedCount === 1) return 1; // 머리에 혹(작은 새싹)
-    if (clearedCount < 7) return 2; // 새싹
-    return 3; // 꽃이 핀 새싹
-  }
-
   function setWorld(alive) {
     document.body.classList.toggle('alive', !!alive);
   }
 
-  // ───────────────────────── 씨앗 그림 ─────────────────────────
-  function seedSVG(stage) {
-    const sprout =
-      stage === 1
-        ? `<path d="M60 60 q-1 -8 -7 -12 q8 0 9 10" fill="#7cbf6a"/>`
-        : stage >= 2
-          ? `<path d="M60 62 C60 48 60 38 60 28" stroke="#5f9a52" stroke-width="4" fill="none" stroke-linecap="round"/>
-             <path d="M60 42 C46 40 38 30 40 22 C52 22 60 30 60 42Z" fill="#7cbf6a"/>
-             <path d="M60 36 C72 34 80 24 78 16 C66 16 60 24 60 36Z" fill="#8fcd78"/>`
-          : '';
-    const flower =
-      stage >= 3
-        ? `<g transform="translate(60 22)">
-             ${[0, 72, 144, 216, 288].map((r) => `<ellipse rx="5" ry="9" cy="-8" fill="#f6b6c8" transform="rotate(${r})"/>`).join('')}
-             <circle r="5" fill="#f3c74a"/></g>`
-        : '';
-    return `<svg viewBox="0 0 120 120" role="img" aria-label="씨앗">
-      <ellipse cx="60" cy="110" rx="42" ry="7" fill="#c9b591" opacity=".55"/>
-      ${sprout}${flower}
-      <ellipse cx="60" cy="84" rx="27" ry="25" fill="#b67f4c"/>
-      <ellipse cx="51" cy="74" rx="8" ry="5" fill="#d4a274" opacity=".55"/>
-      <g class="face">
-        <circle cx="51" cy="85" r="3.2" fill="#3b2a1d"/>
-        <circle cx="69" cy="85" r="3.2" fill="#3b2a1d"/>
-        <circle cx="46" cy="93" r="3.6" fill="#f0a08a" opacity=".55"/>
-        <circle cx="74" cy="93" r="3.6" fill="#f0a08a" opacity=".55"/>
-        <path d="M55 94 q5 5 10 0" stroke="#3b2a1d" stroke-width="2" fill="none" stroke-linecap="round"/>
-      </g>
-    </svg>`;
-  }
+  // ───────────────────────── 씨앗 (처음 화면과 같은 씨앗) ─────────────────────────
+  const SEED_SVG = '<svg id="seed" viewBox="0 0 200 200" role="img" aria-label="씨앗"></svg>';
+  const ANIM = { nod: 'nod', tilt: 'tilt', cheer: 'happy', listen: 'listen' };
+  function drawSeed() { SG.growth.update(true); }
+  function seedAnim(name) { SG.seed.react(name ? ANIM[name] || name : null); }
 
-  function seedAnim(name) {
-    const el = $('#seed');
-    if (!el) return;
-    el.classList.remove('nod', 'tilt', 'listen', 'cheer');
-    void el.offsetWidth; // 애니메이션 재시작
-    if (name) el.classList.add(name);
-  }
+  // 경험치 (engine.js CONFIG.exp 정책)
+  const EXP = SG.engine.CONFIG.exp;
+  const addExp = (n) => SG.growth.addExp(n);
 
   function say(text) {
     const b = $('#bubble');
@@ -389,13 +357,15 @@
     const nextCh = Math.min(progress.cleared + 1, 7);
     app.innerHTML = `
       <section class="screen map">
-        <a class="home-link" href="../">← 처음 화면</a>
+        <div class="act-head">
+          <h2>동화 읽기</h2>
+          <a class="btn ghost small" href="../">정원으로 🏡</a>
+        </div>
         <header class="map-head">
-          <p class="eyebrow">말씨 · 읽기 – 문장</p>
           <h1>${progress.cleared >= 7 ? '다시 살아난 세상' : '말을 잃은 세상'}</h1>
           <p class="sub">씨앗에게 동화를 한 문장씩 소리 내어 읽어 주세요.<br>한 장을 완성하면 다음 장이 열려요.</p>
         </header>
-        <div class="seed-hero">${seedSVG(stageFor(progress.cleared))}</div>
+        <div class="seed-hero">${SEED_SVG}</div>
         <ol class="chapters">
           ${STORY.map((c) => {
             const n = c.id;
@@ -424,6 +394,7 @@
         renderMap();
       }
     });
+    drawSeed();
   }
 
   // ───────────────────────── 장 화면 ─────────────────────────
@@ -454,13 +425,13 @@
     app.innerHTML = `
       <section class="screen chapter-screen">
         <header class="ch-head">
-          <button class="back" id="back" aria-label="이야기 지도로">←</button>
+          <button class="back" id="back" aria-label="이야기 지도로" title="이야기 지도">←</button>
           <div class="ch-title"><p class="eyebrow">${S.ch}장</p><h2>${esc(d.title)}</h2></div>
           <div class="dots" id="dots" aria-label="모은 문장"></div>
         </header>
         <div class="stage">
           <div class="bubble" id="bubble" aria-live="polite"></div>
-          <div class="seed" id="seed">${seedSVG(stageFor(S.ch - 1))}</div>
+          ${SEED_SVG}
         </div>
         <div class="book" id="book" aria-label="함께 만든 동화"></div>
         <div id="panel"></div>
@@ -469,6 +440,7 @@
       saveResume();
       renderMap();
     });
+    drawSeed();
   }
 
   function renderDots() {
@@ -490,6 +462,7 @@
   function startSentence() {
     stopAll();
     S.retries = 0;
+    S.attempts = 0;
     S.startedAt = Date.now();
     S.support = S.held || S.phase === 'reread'; // 보류했던 문장·다시 읽기는 크게 보여 주며 시작
     const wasHeld = S.held;
@@ -562,12 +535,14 @@
   function evaluate(candidates) {
     if (!S || (S.phase !== 'read' && S.phase !== 'reread')) return;
     const result = Hangul.compareSentence(currentSentence(), candidates);
+    if (!result.empty) { S.attempts = (S.attempts || 0) + 1; addExp(S.attempts === 1 ? EXP.firstTry : EXP.retry); }
     if (!result.empty && result.score >= CFG.passScore) onReached();
     else onNotYet(result.empty ? 'D' : 'C', result);
   }
 
   function onReached() {
     setControlsEnabled(false);
+    addExp(EXP.complete);
     seedAnim('cheer');
     highlightWord(-1);
     if (S.phase === 'reread') {
@@ -689,6 +664,7 @@
       const j = Math.floor(Math.random() * (i + 1));
       [opts[i], opts[j]] = [opts[j], opts[i]];
     }
+    S.quizTries = S.quizTries || 0;
     seedAnim('nod');
     say(q.question);
     $('#panel').innerHTML = `
@@ -704,7 +680,10 @@
         const o = opts[Number(b.dataset.i)];
         app.querySelectorAll('.opt').forEach((x) => (x.disabled = true));
         b.classList.add('chosen');
+        S.quizTries++;
+        addExp(S.quizTries === 1 ? EXP.firstTry : EXP.retry);
         if (o.expected) {
+          addExp(EXP.complete);
           seedAnim('cheer');
           say(LINES.quizYes);
           later(chapterClear, 1600);
@@ -738,7 +717,6 @@
 
     const last = S.ch === 7;
     if (last) setWorld(true);
-    $('#seed').innerHTML = seedSVG(stageFor(S.ch));
     seedAnim('cheer');
     say(last ? '고마워. 네 목소리 덕분에 세상이 다시 살아났어!' : `${S.ch}장 이야기를 함께 완성했어!`);
     renderBook();
