@@ -80,10 +80,6 @@ body { display: flex; flex-direction: column; }
 .act-tile.wide { flex-direction: row; justify-content: flex-start; gap: 12px; text-align: left; width: 100%; margin-bottom: 10px; }
 .act-tile.wide small { flex: 1; }
 
-.words summary { cursor: pointer; font-weight: 700; }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.chip { background: var(--accent-soft); padding: 4px 10px; border-radius: 99px; font-size: .9em; }
-.bloom-chip { background: var(--emph-soft); }
 
 /* ---------- 과제 ---------- */
 .task { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
@@ -169,7 +165,6 @@ body { display: flex; flex-direction: column; }
 .choice { display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--bg-2); border: 2px solid var(--line); border-radius: 16px; padding: 12px 20px; min-width: 100px; }
 .q { font-size: 1.3em; }
 
-.name-input { font-size: 1.3em; padding: 10px 14px; border-radius: 14px; border: 2px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; max-width: 100%; }
 .process { list-style: none; padding: 0; text-align: left; max-width: 480px; margin: 0 auto 12px; }
 .process li { background: var(--accent-soft); border-radius: 14px; padding: 10px 14px; margin-bottom: 8px; }
 .process li::before { content: '🌱 '; }

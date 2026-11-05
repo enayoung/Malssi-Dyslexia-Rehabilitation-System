@@ -109,3 +109,21 @@ a.btn { display: inline-flex; align-items: center; color: inherit; text-decorati
 .celebrate p { font-size: 1.15em; margin: .4em 0; }
 .celebrate .sub { color: var(--muted); font-size: .95em; }
 .big-emoji { font-size: 72px; line-height: 1.1; }
+
+/* 경험치를 얻을 때: 배운 말이 씨앗에게 날아가 쏙 들어감 (js/growth.js) */
+.exp-fly {
+  position: fixed; z-index: 30; pointer-events: none; white-space: nowrap;
+  max-width: 70vw; overflow: hidden; text-overflow: ellipsis;
+  padding: 4px 12px; border-radius: 99px;
+  background: var(--accent-soft); color: var(--accent-dark, #3f7a43); border: 2px solid var(--accent);
+  font-family: var(--font-title); font-size: 18px; box-shadow: 0 6px 16px rgba(60, 90, 50, .18);
+}
+.exp-fly.big { font-size: 24px; padding: 6px 16px; background: #fff7d6; border-color: var(--sun); color: var(--ink); }
+.exp-spark { position: fixed; z-index: 31; pointer-events: none; font-size: 16px; }
+#seed .seed-body { transform-box: fill-box; transform-origin: 50% 80%; }
+#growth-fill.gain { animation: gain .9s ease; }
+@keyframes gain {
+  0% { filter: brightness(1); box-shadow: none; }
+  35% { filter: brightness(1.3); box-shadow: 0 0 10px 2px var(--sun); }
+  100% { filter: brightness(1); box-shadow: none; }
+}

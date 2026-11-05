@@ -242,7 +242,7 @@
     var msgs = [];
     if (s.retries >= 3) msgs.push('어려운 소리도 끝까지 여러 번 들려주었어요.');
     if (s.reachCount && s.totalReachMs / s.reachCount > 20000) msgs.push('천천히 끝까지 알려줬어요. 씨앗도 차근차근 배우고 있어요!');
-    if (s.bloomed > 0) msgs.push('새로운 말들도 정원에 피어났어요. 씨앗이 함께 배운 말이 늘었어요.');
+    if (s.bloomed > 0) msgs.push('비슷한 소리로 새로운 말도 피워 보았어요.');
     if (s.held > 0) msgs.push('어떤 말은 씨앗이 기억해 두었어요. 다음에 또 들려주세요!');
     if (s.quitEarly) msgs.push('오늘 알려준 말은 씨앗이 잘 기억하고 있을게요. 다음에 또 들려주세요!');
     if (!msgs.length) msgs.push(s.attempts > 0 ? '오늘도 씨앗에게 많은 말을 들려주었어요.' : '씨앗이 다음 만남을 기다리고 있을게요.');

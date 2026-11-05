@@ -100,7 +100,8 @@
 
   // 경험치 (engine.js CONFIG.exp 정책)
   const EXP = SG.engine.CONFIG.exp;
-  const addExp = (n) => SG.growth.addExp(n);
+  const addExp = (n, fx) => SG.growth.addExp(n, fx);
+  const short = (t) => (t.length > 16 ? t.slice(0, 15) + '…' : t);
 
   function say(text) {
     const b = $('#bubble');
@@ -535,14 +536,15 @@
   function evaluate(candidates) {
     if (!S || (S.phase !== 'read' && S.phase !== 'reread')) return;
     const result = Hangul.compareSentence(currentSentence(), candidates);
-    if (!result.empty) { S.attempts = (S.attempts || 0) + 1; addExp(S.attempts === 1 ? EXP.firstTry : EXP.retry); }
+    if (!result.empty) { S.attempts = (S.attempts || 0) + 1; addExp(S.attempts === 1 ? EXP.firstTry : EXP.retry, { text: '✨', from: $('#sentence') }); }
     if (!result.empty && result.score >= CFG.passScore) onReached();
     else onNotYet(result.empty ? 'D' : 'C', result);
   }
 
   function onReached() {
     setControlsEnabled(false);
-    addExp(EXP.complete);
+    // 읽어 준 문장이 씨앗에게 쏙 들어감
+    addExp(EXP.complete, { text: short(currentSentence()), from: $('#sentence'), big: true });
     seedAnim('cheer');
     highlightWord(-1);
     if (S.phase === 'reread') {
@@ -681,9 +683,9 @@
         app.querySelectorAll('.opt').forEach((x) => (x.disabled = true));
         b.classList.add('chosen');
         S.quizTries++;
-        addExp(S.quizTries === 1 ? EXP.firstTry : EXP.retry);
+        addExp(S.quizTries === 1 ? EXP.firstTry : EXP.retry, { text: '✨', from: b });
         if (o.expected) {
-          addExp(EXP.complete);
+          addExp(EXP.complete, { text: short(o.text), from: b, big: true });
           seedAnim('cheer');
           say(LINES.quizYes);
           later(chapterClear, 1600);

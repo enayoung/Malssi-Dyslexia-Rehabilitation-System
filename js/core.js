@@ -44,7 +44,7 @@
   /* ---------------- 성장 시각화부 ---------------- */
   /* 성장: js/growth.js (동화 읽기 페이지와 함께 씀) */
   function updateGrowth(force) { return SG.growth.update(force); }
-  function addExp(n) { SG.growth.addExp(n); }
+  function addExp(n, fx) { return SG.growth.addExp(n, fx); }
 
   /* 유의미 대체 응답의 의미 이미지가 씨앗 주변에 '피어나는' 연출 */
   function bloomAt(emoji) {
@@ -197,8 +197,9 @@
     var isD = res.type === T.NO_RESPONSE;
     if (!isD) {
       this.attempts++; session.attempts++;
-      if (this.attempts === 1) addExp(E.CONFIG.exp.firstTry);
-      else { addExp(E.CONFIG.exp.retry); session.retries++; }
+      var spark = { text: '✨', from: fromEl(o) };
+      if (this.attempts === 1) addExp(E.CONFIG.exp.firstTry, spark);
+      else { addExp(E.CONFIG.exp.retry, spark); session.retries++; }
     }
     if (res.type !== T.REACHED && res.diffs && res.diffs.length) ST.recordConfusion(res.diffs);
     if (o.fbSlot) o.fbSlot.innerHTML = '';
@@ -208,7 +209,8 @@
       this.busy = true;
       var ms = Date.now() - this.start;
       session.completed++; session.reachCount++; session.totalReachMs += ms;
-      addExp(E.CONFIG.exp.complete);
+      // 배운 말이 씨앗에게 쏙 들어감
+      addExp(E.CONFIG.exp.complete, { text: learnedText(o), from: fromEl(o), big: true });
       ST.removeHold(o.activity, o.id);
       this.record(true, false);
       var fb = E.buildFeedback({ type: T.REACHED, target: o.word || o.target, attempt: o.sentence ? 0 : this.attempts });
@@ -241,7 +243,7 @@
     SEED.react(fb2.anim);
     if (acts.indexOf('bloom') >= 0 && res.image) {
       bloomAt(res.image);
-      ST.addBloom(res.word || res.heard, res.image); session.bloomed++;
+      session.bloomed++;
     }
     if (acts.indexOf('compare') >= 0 && o.fbSlot) {
       var tw = res.targetWord || (o.sentence ? null : o.target);
@@ -270,6 +272,18 @@
       self.arm();
     });
   };
+
+  /** 날아갈 말이 출발할 위치: 목표 표현 → 피드백 칸이 들어 있는 카드 */
+  function fromEl(o) {
+    if (o.display && o.display.el && o.display.el.isConnected) return o.display.el;
+    if (o.fbSlot && o.fbSlot.parentNode) return o.fbSlot.parentNode;
+    return null;
+  }
+  /** 씨앗에게 들어갈 '배운 말' */
+  function learnedText(o) {
+    var t = o.word || o.target || '';
+    return t.length > 16 ? t.slice(0, 15) + '…' : t;
+  }
 
   function emphasisInfo(o, res, confused) {
     var diffs = res.diffs || [];
@@ -346,30 +360,6 @@
     SEED.say('오늘 알려준 말, 잘 기억해 둘게!', { intent: 'generic' });
   }
 
-  /* ================= 이름 짓기 (도입 활동) ================= */
-  function showNaming() {
-    panel.innerHTML = '';
-    var input = el('input', { class: 'name-input', type: 'text', maxlength: '12', placeholder: '이름을 써 주세요', 'aria-label': '씨앗 이름' });
-    function accept(name) {
-      name = (name || '').trim() || '새싹이';
-      ST.get().seedName = name; ST.save(); updateGrowth();
-      SEED.react('happy');
-      addExp(E.CONFIG.exp.firstTry);
-      SEED.say('와, 내 이름은 ' + name + '! 정말 마음에 들어. 고마워!', { intent: 'reached' }).then(goHome);
-    }
-    var kids = [
-      el('h2', { text: '씨앗에게 이름을 지어 주세요' }),
-      el('p', { class: 'muted', text: '어떤 이름이든 좋아요.' })
-    ];
-    if (inputMode() === 'voice') {
-      kids.push(micButton('이름 말해 주기', function (alts) { if (alts.length) accept(alts[0].replace(/[.?!]/g, '')); else SEED.say('조금 더 크게 들려줄래? 써 줘도 좋아!', { intent: 'retry' }); }));
-    }
-    kids.push(el('div', { class: 'row' }, [input, el('button', { class: 'btn primary', text: '이 이름으로 할래요', onclick: function () { accept(input.value); } })]));
-    panel.appendChild(el('div', { class: 'card center' }, kids));
-    SEED.react('sing');
-    SEED.say('안녕! 나는 말을 잃은 세상에 남은 아기 씨앗이야. 내 이름을 지어 줄래?', { intent: 'generic' });
-  }
-
   /* ================= 정원 (홈) ================= */
   function goHome() {
     exitCurrent();
@@ -379,14 +369,9 @@
       return el('button', { class: 'act-tile', onclick: function () { exitCurrent(); a.start(); } },
         [el('span', { class: 'act-ic', text: a.icon }), el('b', { text: a.title }), el('small', { text: a.desc })]);
     }));
-    var bloomed = st.bloomed.map(function (x) { return x.img + ' ' + x.word; });
     panel.appendChild(el('div', { class: 'home' }, [
       grid,
-      el('details', { class: 'card words' }, [
-        el('summary', { text: '함께 피어난 말 보기' }),
-        el('div', { class: 'chips' }, bloomed.length ? bloomed.map(function (t) { return el('span', { class: 'chip bloom-chip', text: t }); }) : [el('span', { class: 'muted', text: '아직 비어 있어요' })]),
-        st.hold.length ? el('p', { class: 'muted', text: '씨앗이 기억해 둔 말이 있어요. 다음에 먼저 다시 만나요.' }) : null
-      ]),
+      st.hold.length ? el('p', { class: 'muted center', text: '씨앗이 기억해 둔 말이 있어요. 다음에 먼저 다시 만나요.' }) : null,
       el('div', { class: 'row' }, [
         el('button', { class: 'btn', text: '오늘은 여기까지 🌙', onclick: endSession }),
         el('button', { class: 'btn ghost small', text: '설정 ⚙️', onclick: showSettings })
@@ -432,7 +417,7 @@
       el('div', { class: 'row' }, [
         el('button', { class: 'btn', text: '돌아가기', onclick: goHome }),
         el('button', { class: 'btn ghost small', text: '처음부터 새로 시작', onclick: function () {
-          if (confirm('씨앗과 정원을 모두 새로 시작할까요?')) { ST.reset(); newSession(); updateGrowth(true); applyText(); updateModeBtn(); showNaming(); }
+          if (confirm('씨앗과 정원을 모두 새로 시작할까요?')) { ST.reset(); newSession(); updateGrowth(true); applyText(); updateModeBtn(); goHome(); }
         } })
       ])
     ]));
@@ -462,7 +447,7 @@
   });
   function applyText() { document.body.classList.toggle('big-text', !!ST.get().settings.bigText); }
   $('#btn-text').addEventListener('click', function () { var st = ST.get(); st.settings.bigText = !st.settings.bigText; ST.save(); applyText(); });
-  $('#btn-home').addEventListener('click', function () { if (ST.get().seedName) goHome(); });
+  $('#btn-home').addEventListener('click', function () { goHome(); });
   $('#seed').addEventListener('click', function () { SEED.react('happy'); });
 
   /* 활동 이탈(탭 닫기)도 보류로 기록 */
@@ -476,11 +461,11 @@
     isCurrent: function (run) { return current === run; },
     activityHeader: activityHeader, exitCurrent: exitCurrent, micButton: micButton,
     runQueue: runQueue, heldFirst: heldFirst, isHeld: isHeld, roundDone: roundDone,
-    goHome: goHome, endSession: endSession, showNaming: showNaming,
+    goHome: goHome, endSession: endSession,
     start: function () {
       ST.load();
       updateGrowth(); applyText(); updateModeBtn();
-      if (!ST.get().seedName) showNaming(); else goHome();
+      goHome();
     }
   };
 })();
