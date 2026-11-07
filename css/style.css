@@ -162,8 +162,15 @@ body { display: flex; flex-direction: column; }
 .process { list-style: none; padding: 0; text-align: left; max-width: 480px; margin: 0 auto 12px; }
 .process li { background: var(--accent-soft); border-radius: 14px; padding: 10px 14px; margin-bottom: 8px; }
 .process li::before { content: '🌱 '; }
-.toggle { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
-.toggle input { width: 22px; height: 22px; }
+.toggle { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-top: 1px dashed var(--line); cursor: pointer; }
+.toggle input { flex: none; width: 22px; height: 22px; margin-top: 3px; accent-color: var(--accent); }
+.toggle span, .set-group { display: flex; flex-direction: column; gap: 2px; }
+.toggle small, .set-group small { font-size: .82em; line-height: 1.45; }
+.set-group { gap: 6px; padding: 4px 0 12px; }
+.seg { display: flex; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--bg); }
+.seg button { flex: 1; min-height: 46px; border: 0; background: transparent; font-weight: 700; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button.on { background: var(--accent); color: var(--accent-ink); }
 
 
 @media (max-width: 480px) {

@@ -98,6 +98,9 @@
   function drawSeed() { SG.growth.update(true); }
   function seedAnim(name) { SG.seed.react(name ? ANIM[name] || name : null); }
 
+  // 처음 화면 설정의 '자간 넓히기'를 동화 읽기에도 적용
+  document.body.classList.toggle('wide-spacing', !!SG.store.get().settings.wideSpacing);
+
   // 경험치 (engine.js CONFIG.exp 정책)
   const EXP = SG.engine.CONFIG.exp;
   const addExp = (n, fx) => SG.growth.addExp(n, fx);

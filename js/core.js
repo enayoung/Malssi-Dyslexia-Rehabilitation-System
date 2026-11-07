@@ -319,7 +319,7 @@
         SEED.react(null);
         if (r.error === 'not-allowed' || r.error === 'service-not-allowed' || r.error === 'network' || r.error === 'unsupported' || r.error === 'start-failed') {
           SEED.say('마이크 소리가 들리지 않아. 누르기 방법으로 알려줄래?', { intent: 'generic' });
-          ST.get().settings.inputMode = 'tap'; ST.save(); updateModeBtn();
+          ST.get().settings.inputMode = 'tap'; ST.save();
           if (onHeard.fallback) onHeard.fallback();
           return;
         }
@@ -403,24 +403,46 @@
   function showSettings() {
     var st = ST.get();
     panel.innerHTML = '';
-    function toggle(label, key) {
+    function toggle(label, key, help) {
       var cb = el('input', { type: 'checkbox' });
       cb.checked = !!st.settings[key];
       cb.addEventListener('change', function () { st.settings[key] = cb.checked; ST.save(); applyText(); });
-      return el('label', { class: 'toggle' }, [cb, el('span', { text: label })]);
+      return el('label', { class: 'toggle' }, [cb, el('span', {}, [el('b', { text: label }), help ? el('small', { class: 'muted', text: help }) : null])]);
     }
-    panel.appendChild(el('div', { class: 'card' }, [
+    // 답하는 방법: 말하기 / 누르기 (단어 읽기에 적용)
+    var canVoice = S.recognitionSupported();
+    var seg = el('div', { class: 'seg', role: 'radiogroup', 'aria-label': '답하는 방법' });
+    function drawSeg() {
+      seg.innerHTML = '';
+      [['voice', '🎤 말하기'], ['tap', '👆 누르기']].forEach(function (o) {
+        var on = inputMode() === o[0];
+        var b = el('button', { class: on ? 'on' : '', role: 'radio', 'aria-checked': on ? 'true' : 'false', text: o[1] });
+        if (o[0] === 'voice' && !canVoice) b.disabled = true;
+        b.addEventListener('click', function () { st.settings.inputMode = o[0]; ST.save(); drawSeg(); });
+        seg.appendChild(b);
+      });
+    }
+    drawSeg();
+    panel.appendChild(el('div', { class: 'card settings' }, [
       el('h2', { text: '설정' }),
-      toggle('씨앗 목소리로 말하기', 'seedVoice'),
-      toggle('글자 크게 보기', 'bigText'),
-      el('p', { class: 'muted', text: '음성 인식: ' + (S.recognitionSupported() ? '이 브라우저에서 사용할 수 있어요 (크롬·엣지 권장)' : '이 브라우저에서는 쓸 수 없어 누르기 방법으로 진행해요') }),
+      el('div', { class: 'set-group' }, [
+        el('b', { text: '답하는 방법' }),
+        el('small', { class: 'muted', text: canVoice
+          ? '말하기: 낱말을 소리 내어 읽어 씨앗에게 들려줘요. 누르기: 소리를 들어 보고 글자와 같은 소리를 골라요.'
+          : '이 브라우저에서는 음성 인식을 쓸 수 없어 누르기로 진행해요 (크롬·엣지에서는 말하기를 쓸 수 있어요).' }),
+        seg
+      ]),
+      toggle('씨앗 목소리로 말하기', 'seedVoice', '씨앗의 말풍선 대사를 소리로도 들려줘요.'),
+      toggle('글자 크게 보기', 'bigText', '읽을 낱말과 글자를 더 크게 보여줘요.'),
+      toggle('자간 넓히기', 'wideSpacing', '글자와 글자, 낱말과 낱말 사이를 넓혀 읽기 편하게 해요. 동화 읽기에도 적용돼요.'),
       el('div', { class: 'row' }, [
-        el('button', { class: 'btn', text: '돌아가기', onclick: goHome }),
+        el('button', { class: 'btn primary', text: '돌아가기', onclick: goHome }),
         el('button', { class: 'btn ghost small', text: '처음부터 새로 시작', onclick: function () {
-          if (confirm('씨앗과 정원을 모두 새로 시작할까요?')) { ST.reset(); newSession(); updateGrowth(true); applyText(); updateModeBtn(); goHome(); }
+          if (confirm('씨앗과 정원을 모두 새로 시작할까요?')) { ST.reset(); newSession(); updateGrowth(true); applyText(); goHome(); }
         } })
       ])
     ]));
+    SEED.say('나를 어떻게 도와줄지 골라 줘!', { intent: 'generic', voice: false });
   }
 
   /* ================= 활동 등록 ================= */
@@ -431,21 +453,13 @@
     activities.sort(function (x, y) { return x.order - y.order; });
   };
 
-  /* ================= 상단 버튼 ================= */
-  function updateModeBtn() {
-    var b = $('#btn-mode');
-    var m = inputMode();
-    b.textContent = m === 'voice' ? '🎤' : '👆';
-    b.setAttribute('aria-label', m === 'voice' ? '지금은 말하기 방법 (누르기로 바꾸기)' : '지금은 누르기 방법 (말하기로 바꾸기)');
+  /* ================= 상단 버튼 · 화면 설정 ================= */
+  /** 글자 크게 · 자간 넓히기를 화면에 반영 */
+  function applyText() {
+    var st = ST.get().settings;
+    document.body.classList.toggle('big-text', !!st.bigText);
+    document.body.classList.toggle('wide-spacing', !!st.wideSpacing);
   }
-  $('#btn-mode').addEventListener('click', function () {
-    var st = ST.get();
-    var m = inputMode();
-    if (m === 'tap' && !S.recognitionSupported()) { SEED.say('이 브라우저에서는 말하기를 쓸 수 없어. 크롬에서 열어 줄래?', { intent: 'generic' }); return; }
-    st.settings.inputMode = m === 'voice' ? 'tap' : 'voice'; ST.save(); updateModeBtn();
-    SEED.say(st.settings.inputMode === 'voice' ? '이제 말로 들려줘!' : '이제 눌러서 알려줘!', { intent: 'generic', voice: false });
-  });
-  function applyText() { document.body.classList.toggle('big-text', !!ST.get().settings.bigText); }
   $('#btn-text').addEventListener('click', function () { var st = ST.get(); st.settings.bigText = !st.settings.bigText; ST.save(); applyText(); });
   $('#btn-home').addEventListener('click', function () { goHome(); });
   $('#seed').addEventListener('click', function () { SEED.react('happy'); });
@@ -464,7 +478,7 @@
     goHome: goHome, endSession: endSession,
     start: function () {
       ST.load();
-      updateGrowth(); applyText(); updateModeBtn();
+      updateGrowth(); applyText();
       goHome();
     }
   };

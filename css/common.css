@@ -89,6 +89,18 @@ a.icon-btn { display: inline-grid; place-items: center; text-decoration: none; c
 @keyframes glow { 50% { opacity: .5; } }
 @keyframes pop { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
+/* 자간 넓히기 (설정): 글자 사이·낱말 사이를 넓힘. 두 페이지 공통 */
+body.wide-spacing { letter-spacing: .1em; word-spacing: .3em; }
+body.wide-spacing .target-line { letter-spacing: .2em; }
+body.wide-spacing .target.sentence .target-line { letter-spacing: .14em; word-spacing: .4em; }
+body.wide-spacing .target.assist .target-line { letter-spacing: .36em; }
+body.wide-spacing .cmp-word,
+body.wide-spacing .wcard,
+body.wide-spacing .frame,
+body.wide-spacing .oddw { letter-spacing: .16em; }
+body.wide-spacing .sentence { letter-spacing: .14em; word-spacing: .4em; }
+body.wide-spacing .sentence.support { letter-spacing: .2em; word-spacing: .5em; }
+
 /* 씨앗 줄: 작은 씨앗 + 옆 말풍선. 게임 바로 위에 붙어 한 덩어리로 보임 (두 페이지 공통) */
 .seed-strip {
   display: flex; align-items: center; gap: 10px;

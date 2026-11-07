@@ -12,7 +12,7 @@
       confusionPairs: {},// 'ㅏ→ㅓ': 2
       hold: [],          // 보류 과제 [{activity, id}]
       history: [],       // 과제 이력 [{activity, id, attempts, reached, held, ms, at}]
-      settings: { inputMode: 'auto', seedVoice: true, bigText: false }
+      settings: { inputMode: 'auto', seedVoice: true, bigText: false, wideSpacing: false }
     };
   }
 
