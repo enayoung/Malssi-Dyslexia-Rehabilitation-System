@@ -363,7 +363,7 @@
       <section class="screen map">
         <div class="act-head">
           <h2>동화 읽기</h2>
-          <a class="btn ghost small" href="../">정원으로 🏡</a>
+          <a class="btn ghost small" href="../index.html">정원으로 🏡</a>
         </div>
         <div class="seed-strip stage">
           <div class="seed-wrap">${SEED_SVG}</div>
