@@ -26,11 +26,9 @@ button:disabled { cursor: default; }
 .eyebrow { margin: 0; font-size: 13px; letter-spacing: .08em; color: var(--muted); }
 
 /* ── 이야기 지도 ── */
-.map-head { text-align: center; padding-top: 4px; }
-.map-head h1 { margin: 6px 0 8px; font-size: 28px; font-family: var(--font-title); font-weight: 400; }
-.map-head .sub { margin: 0; color: var(--muted); line-height: 1.6; font-size: 15px; }
-.seed-hero { width: 140px; margin: 10px auto 4px; }
-.chapters { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 10px; }
+.map-head { text-align: center; }
+.map-head h1 { margin: 0 0 4px; font-size: 24px; font-family: var(--font-title); font-weight: 400; }
+.chapters { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 10px; }
 .chapter {
   width: 100%; display: flex; align-items: center; gap: 14px; text-align: left;
   padding: 14px 16px; border-radius: 18px; border: 2px solid var(--line); background: var(--card);
@@ -48,7 +46,7 @@ button:disabled { cursor: default; }
 .chapter.next .a { color: var(--accent-dark); }
 .chapter.locked { opacity: .55; background: transparent; }
 .chapter.locked .num { background: #ece6d8; }
-.link { display: block; margin: 22px auto 0; background: none; border: 0; color: var(--muted); text-decoration: underline; font-size: 14px; }
+.link { display: block; margin: 16px auto 0; background: none; border: 0; color: var(--muted); text-decoration: underline; font-size: 14px; }
 
 /* ── 장 화면 ── */
 .ch-head { display: flex; align-items: center; gap: 12px; }
@@ -68,10 +66,11 @@ button:disabled { cursor: default; }
   border: 2px solid var(--line); border-bottom: 1px dashed var(--line); border-radius: 20px 20px 0 0;
   box-shadow: 0 -12px 0 var(--bg);
 }
+/* 이야기 지도: 씨앗 줄 아래로 장 목록이 한 카드로 이어짐 */
+.map-body { padding: 12px 14px 16px; background: var(--card); border: 2px solid var(--line); border-top: 0; border-radius: 0 0 20px 20px; }
 /* 씨앗 줄 · 모은 동화 · 읽을 문장 카드를 한 장으로 이어 붙임 */
 .chapter-screen .book { margin: 0; border-radius: 0; border-top: 0; border-bottom: 0; }
 .chapter-screen #panel > .card { border-radius: 0 0 20px 20px; }
-.seed-hero #seed { width: 140px; height: 140px; }
 
 
 /* 동화책: 모은 문장 */

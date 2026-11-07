@@ -362,11 +362,14 @@
           <h2>동화 읽기</h2>
           <a class="btn ghost small" href="../">정원으로 🏡</a>
         </div>
+        <div class="seed-strip stage">
+          <div class="seed-wrap">${SEED_SVG}</div>
+          <div class="bubble" id="bubble" aria-live="polite"></div>
+        </div>
+        <div class="map-body">
         <header class="map-head">
           <h1>${progress.cleared >= 7 ? '다시 살아난 세상' : '말을 잃은 세상'}</h1>
-          <p class="sub">씨앗에게 동화를 한 문장씩 소리 내어 읽어 주세요.<br>한 장을 완성하면 다음 장이 열려요.</p>
         </header>
-        <div class="seed-hero">${SEED_SVG}</div>
         <ol class="chapters">
           ${STORY.map((c) => {
             const n = c.id;
@@ -383,6 +386,7 @@
           }).join('')}
         </ol>
         <button class="link" id="reset">처음부터 다시 시작하기</button>
+        </div>
       </section>`;
 
     app.querySelectorAll('.chapter:not([disabled])').forEach((b) =>
@@ -396,6 +400,12 @@
       }
     });
     drawSeed();
+    seedAnim('nod');
+    say(progress.cleared >= 7
+      ? '네 목소리 덕분에 세상이 다시 살아났어! 좋아하는 장을 또 읽어 줄래?'
+      : progress.resume
+        ? '지난번 이야기가 궁금해! 이어서 읽어 줄래?'
+        : '나에게 동화를 한 문장씩 소리 내어 읽어 줘! 한 장을 완성하면 다음 장이 열려.');
   }
 
   // ───────────────────────── 장 화면 ─────────────────────────
