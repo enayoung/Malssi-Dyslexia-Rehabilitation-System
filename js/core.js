@@ -460,9 +460,9 @@
     document.body.classList.toggle('big-text', !!st.bigText);
     document.body.classList.toggle('wide-spacing', !!st.wideSpacing);
   }
-  $('#btn-text').addEventListener('click', function () { var st = ST.get(); st.settings.bigText = !st.settings.bigText; ST.save(); applyText(); });
-  $('#btn-home').addEventListener('click', function () { goHome(); });
-  $('#seed').addEventListener('click', function () { SEED.react('happy'); });
+  if ($('#btn-text')) $('#btn-text').addEventListener('click', function () { var st = ST.get(); st.settings.bigText = !st.settings.bigText; ST.save(); applyText(); });
+  if ($('#btn-home')) $('#btn-home').addEventListener('click', function () { goHome(); });
+  if ($('#seed')) $('#seed').addEventListener('click', function () { SEED.react('happy'); });
 
   /* 활동 이탈(탭 닫기)도 보류로 기록 */
   window.addEventListener('pagehide', function () { if (current) current.abandon(); });
