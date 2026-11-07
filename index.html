@@ -22,15 +22,17 @@
     <button class="icon-btn" id="btn-text" aria-label="글자 크게">가+</button>
   </header>
 
-  <section class="scene" id="scene">
-    <div class="seed-wrap">
+  <!-- 씨앗과 게임을 한 덩어리로: 위에 작은 씨앗 + 말풍선, 바로 아래 게임 -->
+  <main class="board">
+    <section class="seed-strip scene" id="scene">
+      <div class="seed-wrap">
+        <svg id="seed" viewBox="0 0 200 200" aria-hidden="true"></svg>
+        <div class="bloom-layer" id="bloom-layer"></div>
+      </div>
       <div class="bubble" id="bubble" aria-live="polite"></div>
-      <svg id="seed" viewBox="0 0 200 200" aria-hidden="true"></svg>
-      <div class="bloom-layer" id="bloom-layer"></div>
-    </div>
-  </section>
-
-  <main class="panel" id="panel"></main>
+    </section>
+    <div class="panel" id="panel"></div>
+  </main>
 
   <div class="overlay hidden" id="overlay"></div>
 

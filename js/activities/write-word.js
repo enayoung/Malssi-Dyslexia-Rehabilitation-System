@@ -75,9 +75,16 @@
       if (c && sel.jong !== null) send.removeAttribute('disabled'); else send.setAttribute('disabled', 'disabled');
     }
     panel.appendChild(el('div', { class: 'card task' }, [
-      el('div', { class: 'pic', text: img(task.target) }),
-      el('button', { class: 'btn ghost', text: '🔊 소리 듣기', onclick: function () { run.poke(); S.speak(task.target, 'model'); } }),
-      preview, reveal, tilesWrap, send, fbSlot
+      // 그림·소리 듣기 | 만든 글자를 나란히 두어 화면 높이를 줄임
+      el('div', { class: 'build-top' }, [
+        el('div', { class: 'build-hint' }, [
+          el('div', { class: 'pic', text: img(task.target) }),
+          el('button', { class: 'btn ghost small', text: '🔊 소리 듣기', onclick: function () { run.poke(); S.speak(task.target, 'model'); } })
+        ]),
+        el('span', { class: 'build-arrow', text: '→' }),
+        preview
+      ]),
+      reveal, tilesWrap, send, fbSlot
     ]));
     var run = new TaskRun({
       activity: 'ww', id: task.id, target: task.target, fbSlot: fbSlot, word: task.target, noRespMs: 15000,

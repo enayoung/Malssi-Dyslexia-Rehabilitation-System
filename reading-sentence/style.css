@@ -62,26 +62,23 @@ button:disabled { cursor: default; }
 .dots span { width: 12px; height: 12px; border-radius: 50%; background: #ddd4c1; transition: background .4s; }
 .dots span.on { background: var(--accent); }
 
-.stage { position: relative; display: flex; flex-direction: column; align-items: center; margin: 14px 0 6px; }
-.bubble {
-  position: relative; max-width: 92%; min-height: 48px; padding: 12px 16px; border-radius: 18px;
-  background: var(--card); border: 2px solid var(--line); font-size: 17px; line-height: 1.5; text-align: center;
+/* 씨앗 줄(.seed-strip)은 ../css/common.css — 처음 화면과 같은 모양, 상단 바 아래에 붙어 있음 */
+.stage {
+  position: sticky; top: 65px; z-index: 4; margin: 12px 0 0;
+  border: 2px solid var(--line); border-bottom: 1px dashed var(--line); border-radius: 20px 20px 0 0;
+  box-shadow: 0 -12px 0 var(--bg);
 }
-.bubble::after {
-  content: ''; position: absolute; left: 50%; bottom: -9px; width: 14px; height: 14px; margin-left: -7px;
-  background: var(--card); border-right: 2px solid var(--line); border-bottom: 2px solid var(--line); transform: rotate(45deg);
-}
-.bubble.show { animation: bubble-pop .35s ease-out; }
+/* 씨앗 줄 · 모은 동화 · 읽을 문장 카드를 한 장으로 이어 붙임 */
+.chapter-screen .book { margin: 0; border-radius: 0; border-top: 0; border-bottom: 0; }
+.chapter-screen #panel > .card { border-radius: 0 0 20px 20px; }
 .seed-hero #seed { width: 140px; height: 140px; }
-.stage #seed { width: 130px; height: 130px; margin-top: 4px; }
 
-@keyframes bubble-pop { from { transform: scale(.92); opacity: .3; } to { transform: none; opacity: 1; } }
 
 /* 동화책: 모은 문장 */
 .book {
-  margin: 10px 0 14px; padding: 14px 16px; border-radius: 16px;
+  margin: 0 0 10px; padding: 10px 16px; border-radius: 16px;
   background: repeating-linear-gradient(180deg, #fffaf0 0 33px, #f1e8d6 33px 34px);
-  border: 2px solid var(--line); min-height: 64px;
+  border: 2px solid var(--line); min-height: 0;
 }
 .book p { margin: 0; font-size: 16px; line-height: 2.1; word-break: keep-all; }
 .book p + p { margin-top: 2px; }

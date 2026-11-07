@@ -430,9 +430,9 @@
           <div class="ch-title"><p class="eyebrow">${S.ch}장</p><h2>${esc(d.title)}</h2></div>
           <div class="dots" id="dots" aria-label="모은 문장"></div>
         </header>
-        <div class="stage">
+        <div class="seed-strip stage">
+          <div class="seed-wrap">${SEED_SVG}</div>
           <div class="bubble" id="bubble" aria-live="polite"></div>
-          ${SEED_SVG}
         </div>
         <div class="book" id="book" aria-label="함께 만든 동화"></div>
         <div id="panel"></div>
