@@ -24,8 +24,9 @@
 
   // ───────────────────────── 설정 ─────────────────────────
   const CFG = {
-    passScore: 0.8, // 문장 전체 자소 유사도가 이 이상이면 "씨앗이 알아들음"
-    wordOkScore: 0.75, // 단어 유사도가 이보다 낮으면 L2에서 강조
+    passScore: 0.8, // 문장 전체 자소 유사도가 이 이상이고
+    wordPassScore: 0.95, // 모든 단어의 자소 유사도도 이 이상이어야 "씨앗이 알아들음" (당신→당산처럼 한 낱말만 틀려도 다시 요청)
+                         // 낮을수록 너그러움: 0.9면 긴 낱말(10자소 이상)의 자소 1개 차이는 넘어감. L2에서는 이보다 낮은 단어를 강조
     silenceEndMs: 1800, // 말이 끊긴 뒤 이 시간이 지나면 듣기 종료
     noInputMs: 8000, // 이 시간 동안 아무 말이 없으면 무응답
     maxRetry: 4, // 같은 문장 재시도가 이 횟수 이상이면 L4(보류)
@@ -256,7 +257,7 @@
       const cands = candidatesFrom(results);
       showHeard(cands[0] || '');
       clearTimeout(silenceT);
-      const ok = Hangul.compareSentence(currentSentence(), cands).score >= CFG.passScore;
+      const ok = isReached(Hangul.compareSentence(currentSentence(), cands));
       silenceT = setTimeout(stop, ok ? 500 : CFG.silenceEndMs);
     };
     r.onerror = (e) => {
@@ -319,6 +320,11 @@
   function showHeard(text) {
     const el = $('#heard');
     if (el) el.textContent = text ? `씨앗이 들은 말: “${text}”` : '';
+  }
+
+  /** 문장 전체도 비슷하고, 모든 단어도 제대로 읽었을 때만 도달 */
+  function isReached(result) {
+    return !result.empty && result.score >= CFG.passScore && result.words.every((w) => w >= CFG.wordPassScore);
   }
 
   // ───────────────────────── 세션 상태 ─────────────────────────
@@ -550,7 +556,7 @@
     if (!S || (S.phase !== 'read' && S.phase !== 'reread')) return;
     const result = Hangul.compareSentence(currentSentence(), candidates);
     if (!result.empty) { S.attempts = (S.attempts || 0) + 1; addExp(S.attempts === 1 ? EXP.firstTry : EXP.retry, { text: '✨', from: $('#sentence') }); }
-    if (!result.empty && result.score >= CFG.passScore) onReached();
+    if (isReached(result)) onReached();
     else onNotYet(result.empty ? 'D' : 'C', result);
   }
 
@@ -605,7 +611,7 @@
     sentence.classList.add('support');
     let marked = 0;
     sentence.querySelectorAll('.w').forEach((el) => {
-      const weak = (result.words[Number(el.dataset.i)] ?? 0) < CFG.wordOkScore;
+      const weak = (result.words[Number(el.dataset.i)] ?? 0) < CFG.wordPassScore;
       el.classList.toggle('weak', weak);
       if (weak) marked++;
     });

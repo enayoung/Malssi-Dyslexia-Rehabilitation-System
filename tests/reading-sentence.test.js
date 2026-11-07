@@ -34,3 +34,25 @@ test('동화 데이터: 7장, 장마다 3문장, 질문 관련 문장 번호가 
     assert.ok(c.quiz.related >= 0 && c.quiz.related < c.sentences.length, c.title);
   });
 });
+
+// reading-sentence/app.js 의 isReached 와 같은 규칙 (CFG.passScore, CFG.wordPassScore)
+const src = require('fs').readFileSync(require('path').join(__dirname, '../reading-sentence/app.js'), 'utf8');
+const PASS = Number(src.match(/passScore:\s*([\d.]+)/)[1]);
+const WORD_PASS = Number(src.match(/wordPassScore:\s*([\d.]+)/)[1]);
+const reached = (t, said) => { const r = Hangul.compareSentence(t, [said]); return !r.empty && r.score >= PASS && r.words.every((w) => w >= WORD_PASS); };
+
+test('모든 문장: 그대로 읽으면 (문장부호·띄어쓰기 달라도) 도달', () => {
+  STORY.forEach((c) => c.sentences.forEach((t) => {
+    assert.ok(reached(t, t), t);
+    assert.ok(reached(t, t.replace(/[^가-힣\s]/g, '')), '문장부호 없이: ' + t);
+    assert.ok(reached(t, t.replace(/\s+/g, '')), '띄어쓰기 없이: ' + t);
+  }));
+});
+
+test('한 낱말만 잘못 읽어도 도달하지 않음 (당신→당산)', () => {
+  const t = '당신의 목소리를 듣고 씨앗이 반응했어요.';
+  assert.equal(reached(t, '당산의 목소리를 듣고 씨앗이 반응했어요'), false);
+  assert.equal(reached(t, '당신의 목서리를 듣고 씨앗이 반응했어요'), false);
+  assert.equal(reached('그 씨앗은 소리를 기다렸어요.', '그 씨앗은 수리를 기다렸어요'), false);
+  assert.equal(reached(t, '당신의 목소리를 듣고 씨앗이 반응했어요'), true);
+});
